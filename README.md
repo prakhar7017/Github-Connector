@@ -101,6 +101,8 @@ The app listens on `http://127.0.0.1:8000` by default. Open `http://127.0.0.1:80
 If you hit GitHub routes before completing OAuth, you get **401** with a message to complete `/auth/login` first.  
 **PAT mode** ignores `/auth/*` for API usage; those routes return **400** explaining PAT is active.
 
+**`oauth_store`:** The module `app/auth/oauth_store.py` holds the OAuth `state` and access token **in memory only**—that choice is for **simplicity**, and **in-memory is fine** for **local and demo** use. A **production** deployment would typically move session data to **Redis**, a **database**, or **encrypted cookies** (or another server-side session store) so tokens survive process restarts, work across multiple instances, and can be managed consistently.
+
 ## API endpoints
 
 ### OAuth
