@@ -13,6 +13,8 @@ from tenacity import (
     wait_exponential,
 )
 
+from app.auth.factory import get_auth_strategy
+from app.auth.strategies import AuthHeadersUnavailableError, GitHubAuthStrategy
 from app.core.config import Settings, get_settings
 from app.core.exceptions import GitHubAPIError
 
@@ -40,15 +42,19 @@ def _github_error_message(response: httpx.Response) -> str:
 class GitHubService:
     """Encapsulates all GitHub REST calls."""
 
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        auth_strategy: GitHubAuthStrategy | None = None,
+    ) -> None:
         self._settings = settings or get_settings()
+        self._auth = auth_strategy or get_auth_strategy(self._settings)
 
     def _headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self._settings.github_token}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
+        try:
+            return self._auth.get_headers()
+        except AuthHeadersUnavailableError as e:
+            raise GitHubAPIError(e.status_code, str(e)) from e
 
     def _client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(
